@@ -70,3 +70,4 @@ scratch/
 test_*.jpg
 latest_*.jpg
 *.log
+.vercel
