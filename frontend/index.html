@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Vision AI CCTV Surveillance</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        darkCard: '#0f172a',
+                        darkBorder: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1120; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-[#0b101d] text-slate-100 min-h-screen flex flex-col select-none antialiased">
+
+    <!-- Top Emergency Strobe Banner (Hidden by default) -->
+    <div id="emergencyAlertBanner" class="hidden bg-rose-600 text-white px-4 py-2 text-center text-sm font-bold tracking-wide shadow-lg flex items-center justify-center gap-3 animate-pulse border-b border-rose-400 z-50">
+        <span class="text-xl">🚨</span>
+        <span id="emergencyAlertMsg">PERINGATAN KEAMANAN TERDETEKSI!</span>
+        <button onclick="document.getElementById('emergencyAlertBanner').classList.add('hidden')" class="ml-4 text-xs bg-rose-800 hover:bg-rose-900 px-2 py-0.5 rounded">Tutup</button>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-[#0f172a]/95 backdrop-blur border-b border-slate-800/80 px-6 py-3.5 flex items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-md shadow-sky-500/20">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+                    SMART VISION AI CCTV
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">v1.0 STANDALONE</span>
+                </h1>
+                <p class="text-xs text-slate-400 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    Multi-Source Vision AI & Real-Time Surveillance Engine
+                </p>
+            </div>
+        </div>
+
+        <!-- Hardware & Status Monitoring Pills -->
+        <div class="hidden lg:flex items-center gap-3">
+            <div class="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-2 text-xs">
+                <span class="text-slate-400">CPU:</span>
+                <span id="cpuMetricVal" class="font-mono font-bold text-sky-400">- %</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-2 text-xs">
+                <span class="text-slate-400">RAM:</span>
+                <span id="ramMetricVal" class="font-mono font-bold text-purple-400">- %</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-2 text-xs">
+                <span class="text-slate-400">Hardware:</span>
+                <span id="gpuMetricVal" class="font-mono font-bold text-emerald-400">Mencari...</span>
+            </div>
+            <div class="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center gap-2 text-xs">
+                <span class="text-slate-400">Uptime:</span>
+                <span id="uptimeMetricVal" class="font-mono font-bold text-slate-300">0s</span>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center gap-2.5">
+            <button onclick="promptSetApiBase()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700/80 text-emerald-400 hover:bg-slate-700/60 transition flex items-center gap-1.5 shadow-sm" title="Atur URL Backend CCTV API (Khusus saat diakses via Vercel Cloud)">
+                🌐 <span class="hidden sm:inline">API Host</span>
+            </button>
+            <button onclick="openModal('geminiApiKeyModal')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-sky-600/25 via-indigo-600/25 to-purple-600/25 text-sky-300 border border-sky-500/40 hover:from-sky-600/40 hover:to-purple-600/40 transition flex items-center gap-1.5 shadow-sm" title="Google Gemini 3.6 & 3.8 Flash Settings">
+                ✨ Gemini 3.6 & 3.8 Flash
+            </button>
+            <button onclick="openModal('userProfileModal')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700/80 text-sky-400 hover:bg-slate-700/60 transition flex items-center gap-1.5 shadow-sm">
+                <span id="currentUserRoleBadge">👤 Super Admin (ADMIN)</span>
+            </button>
+            <button id="soundToggleBtn" onclick="toggleSound()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-600/50 transition">
+                🔔 Suara: ON
+            </button>
+            <button onclick="triggerTestAlert()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600/30 transition">
+                ⚡ Uji Alert
+            </button>
+        </div>
+    </header>
+
+
+    <!-- Main Workspace Layout -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-[#0f172a]/70 border-r border-slate-800/80 p-4 flex flex-col gap-1.5 shrink-0">
+            <div class="text-[11px] font-bold text-slate-500 uppercase px-3 py-1.5 tracking-wider">Modul Pemantauan</div>
+            
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition border border-transparent bg-sky-500/15 text-sky-400 border-sky-500/40" data-tab="liveViewTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Live Multi-View
+            </button>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="playbackTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                VMS & Rekaman Klip
+            </button>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="canvasStudioTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>
+                Virtual Line Studio
+            </button>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="analyticsTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Traffic Analytics
+            </button>
+
+            <div class="text-[11px] font-bold text-slate-500 uppercase px-3 py-1.5 mt-4 tracking-wider">AI Intelijen & Keamanan</div>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="anprTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                ANPR & Plat Nomor
+            </button>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="alertsTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Alerting & Security
+            </button>
+
+            <button class="nav-tab-btn flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition text-slate-400 hover:bg-slate-800/60 border border-transparent" data-tab="settingsTab">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                Kelola Kamera & Server
+            </button>
+
+            <!-- Bottom System Info -->
+            <div class="mt-auto p-3 bg-slate-800/40 rounded-xl border border-slate-700/50 text-[11px] text-slate-400">
+                <div class="font-semibold text-slate-300">Model AI Terpasang:</div>
+                <div class="text-sky-400">YOLOv11 + ByteTrack MOT</div>
+                <div class="text-purple-400">EasyOCR Plate Engine</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6">
+
+            <!-- 1. LIVE VIEW TAB -->
+            <div id="liveViewTab" class="tab-content-panel space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">Live Multi-Camera Surveillance</h2>
+                        <p class="text-xs text-slate-400">Tayangan langsung real-time kamera IP RTSP dan HLS publik dengan visualisasi deteksi AI</p>
+                    </div>
+                    <button onclick="openModal('addCameraModal')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-sky-600/20 transition flex items-center gap-2">
+                        <span>+</span> Tambah Kamera
+                    </button>
+                </div>
+
+                <!-- Live Camera Grid Container -->
+                <div id="liveFeedsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                    <!-- Populated dynamically via app.js -->
+                </div>
+            </div>
+
+            <!-- VMS PLAYBACK & CLIPS ARCHIVE TAB -->
+            <div id="playbackTab" class="tab-content-panel hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">VMS & Pemutar Rekaman Terpadu</h2>
+                        <p class="text-xs text-slate-400">Perekaman klip otomatis berbasis kejadian (10s Pre-Buffer + 10s Post-Buffer) dengan scrubber waktu 24 jam</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400 font-medium">Tanggal:</label>
+                            <input type="date" id="vmsDatePicker" onchange="fetchVmsClips()" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400 font-medium">Kamera:</label>
+                            <select id="vmsCameraSelect" onchange="fetchVmsClips()" class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-sky-500">
+                                <option value="">Semua Kamera</option>
+                            </select>
+                        </div>
+                        <button onclick="triggerManualClipRecording()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+                            🔴 Rekam Klip 20s
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 24-Hour Timeline Scrubber Component -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-4 shadow-lg space-y-3">
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span class="font-bold text-slate-200 flex items-center gap-2">
+                            ⏱️ Bilah Garis Waktu 24 Jam (Timeline Scrubber)
+                            <span class="text-[10px] text-slate-400 font-normal">Klik pada penanda warna untuk memutar klip seketika</span>
+                        </span>
+                        <div class="flex items-center gap-4 text-[11px]">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Plat Buron (Blacklist)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Pelanggaran / Manual</span>
+                        </div>
+                    </div>
+                    <div class="relative w-full h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden cursor-pointer" id="timelineContainer">
+                        <canvas id="timelineCanvas" class="w-full h-full block"></canvas>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-500 px-1">
+                        <span>00:00</span>
+                        <span>04:00</span>
+                        <span>08:00</span>
+                        <span>12:00</span>
+                        <span>16:00</span>
+                        <span>20:00</span>
+                        <span>23:59</span>
+                    </div>
+                </div>
+
+                <!-- Split Player & Event Clips List -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Integrated Player (2 cols) -->
+                    <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 id="currentClipTitle" class="text-sm font-bold text-slate-200">Pemutar Video Bukti Kejadian</h3>
+                                <span id="currentClipBadge" class="px-2 py-0.5 rounded text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">Pilih Klip</span>
+                            </div>
+                            <div class="relative bg-black rounded-xl overflow-hidden aspect-video flex items-center justify-center border border-slate-800">
+                                <video id="vmsVideoPlayer" controls class="w-full h-full object-contain" preload="metadata">
+                                    <source src="" type="video/mp4">
+                                    Browser tidak mendukung pemutar video HTML5.
+                                </video>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                            <span id="currentClipMeta">Belum ada rekaman yang dipilih.</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="downloadCurrentClip()" id="vmsDownloadBtn" class="hidden px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition">
+                                    ⬇️ Unduh Berkas MP4
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clips Archive Table (1 col) -->
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg flex flex-col">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-slate-200">Arsip Klip Kejadian</h3>
+                            <span id="clipsCountBadge" class="text-xs text-sky-400 font-mono font-bold">0 Klip</span>
+                        </div>
+                        <div class="overflow-y-auto max-h-[460px] space-y-2 pr-1" id="clipsListContainer">
+                            <!-- Populated dynamically via app.js -->
+                            <div class="text-center py-10 text-slate-500 text-xs">Memuat daftar klip rekaman...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. VIRTUAL LINE CANVAS STUDIO TAB -->
+            <div id="canvasStudioTab" class="tab-content-panel hidden space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">Studio Virtual Counting Line</h2>
+                        <p class="text-xs text-slate-400">Atur garis batas virtual (*tripwire*) secara presisi di atas video live untuk mendeteksi arus masuk dan keluar</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400 font-medium">Kamera:</label>
+                            <select id="studioCameraSelect" onchange="selectStudioCamera(this.value)" class="bg-slate-800 text-white text-xs px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-sky-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <button type="button" onclick="toggleStudioBackgroundMode()" id="studioBgModeBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5" title="Beralih antara video bersih tanpa coretan AI dan video dengan bounding box">
+                            📷 Video Bersih: ON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Toolbar -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3">
+                    <!-- Tool Mode Selector -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 font-semibold mr-1">Mode Kursor:</span>
+                        <button type="button" onclick="setStudioMode('SELECT')" id="modeSelectBtn" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-sky-500/20 text-sky-400 border-sky-500/50">
+                            👆 Pilih & Geser Garis
+                        </button>
+                        <button type="button" onclick="setStudioMode('DRAW')" id="modeDrawBtn" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white">
+                            ✏️ + Gambar Garis Baru
+                        </button>
+                    </div>
+
+                    <!-- Selected Line Quick Controls (Visible when a line is selected) -->
+                    <div id="selectedLineControls" class="flex items-center gap-2 transition opacity-50 pointer-events-none">
+                        <span class="text-xs text-slate-400 font-semibold mr-1" id="selectedLineTitle">Garis Terpilih: -</span>
+                        <div class="flex items-center bg-slate-800/80 p-0.5 rounded-xl border border-slate-700 text-xs">
+                            <button type="button" onclick="setSelectedLineDirection('BIDIRECTIONAL')" id="dirBidirBtn" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white font-medium transition" title="Dua Arah: Hitung Masuk dan Keluar">
+                                ⇄ Dua Arah
+                            </button>
+                            <button type="button" onclick="setSelectedLineDirection('IN_ONLY')" id="dirInBtn" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-medium transition" title="Hanya Masuk">
+                                ➔ Masuk
+                            </button>
+                            <button type="button" onclick="setSelectedLineDirection('OUT_ONLY')" id="dirOutBtn" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-medium transition" title="Hanya Keluar">
+                                ⬅ Keluar
+                            </button>
+                        </div>
+                        <button type="button" onclick="flipSelectedLineDirection()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-xl text-xs font-semibold transition" title="Balik Posisi Arah Masuk dan Keluar">
+                            🔄 Balik Arah
+                        </button>
+                        <button type="button" onclick="renameSelectedLinePrompt()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 rounded-xl text-xs font-semibold transition" title="Ganti Nama Garis">
+                            ✏️ Ganti Nama
+                        </button>
+                        <button type="button" onclick="deleteCurrentSelectedLine()" class="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold transition" title="Hapus Garis Terpilih">
+                            🗑️ Hapus
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas & Video Overlay Area -->
+                <div class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl relative">
+                    <!-- Helper overlay banner -->
+                    <div class="px-4 py-2 bg-slate-800/80 border-b border-slate-700/60 flex items-center justify-between text-xs text-slate-300">
+                        <div class="flex items-center gap-2">
+                            <span id="studioModeIndicator" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold text-[11px]">MODE: PILIH & GESER</span>
+                            <span class="text-slate-400" id="studioHintText">Klik pada garis untuk memilih. Geser titik P1, P2, atau titik tengah (✛) untuk memindahkan garis.</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-[11px]">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Arah Masuk (IN)</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Arah Keluar (OUT)</span>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full aspect-video bg-black flex items-center justify-center select-none overflow-hidden">
+                        <img id="studioBackgroundStream" class="absolute inset-0 w-full h-full object-contain pointer-events-none" alt="Live Feed Preview">
+                        <canvas id="lineCanvas" width="1280" height="720" class="absolute inset-0 w-full h-full z-10 cursor-default"></canvas>
+                    </div>
+                </div>
+
+                <!-- Existing Lines Table / Cards -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-xl space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200">Daftar Garis Virtual Aktif</h3>
+                            <p class="text-xs text-slate-400">Klik garis pada tabel untuk menyorot dan mengubah parameternya di kanvas</p>
+                        </div>
+                        <span id="linesCountBadge" class="text-xs text-sky-400 font-mono font-bold">0 Garis</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                <tr>
+                                    <th class="py-2.5 px-3">Nama Garis</th>
+                                    <th class="py-2.5 px-3">Koordinat (P1 ➔ P2)</th>
+                                    <th class="py-2.5 px-3">Arah Perlintasan</th>
+                                    <th class="py-2.5 px-3 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="linesListTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. TRAFFIC ANALYTICS TAB -->
+            <div id="analyticsTab" class="tab-content-panel hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white tracking-wide">Dashboard Analitik Lalu Lintas</h2>
+                    <p class="text-xs text-slate-400">Statistik pergerakan objek dan kendaraan real-time tanpa duplikasi data</p>
+                </div>
+
+                <!-- 4 Summary Metric Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg relative overflow-hidden">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Perlintasan Hari Ini</div>
+                        <div id="statTotalCount" class="text-3xl font-extrabold text-white mt-2 font-mono">0</div>
+                        <div class="text-xs text-slate-500 mt-1">Akumulasi seluruh objek</div>
+                        <div class="absolute right-4 bottom-4 text-sky-500/10 text-5xl font-black">#</div>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg relative overflow-hidden">
+                        <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Total Kendaraan Masuk (IN)</div>
+                        <div id="statInCount" class="text-3xl font-extrabold text-emerald-400 mt-2 font-mono">0</div>
+                        <div class="text-xs text-slate-500 mt-1">Arah perlintasan IN</div>
+                        <div class="absolute right-4 bottom-4 text-emerald-500/10 text-5xl font-black">➔</div>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg relative overflow-hidden">
+                        <div class="text-xs font-bold text-amber-400 uppercase tracking-wider">Total Kendaraan Keluar (OUT)</div>
+                        <div id="statOutCount" class="text-3xl font-extrabold text-amber-400 mt-2 font-mono">0</div>
+                        <div class="text-xs text-slate-500 mt-1">Arah perlintasan OUT</div>
+                        <div class="absolute right-4 bottom-4 text-amber-500/10 text-5xl font-black">⬅</div>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg relative overflow-hidden">
+                        <div class="text-xs font-bold text-purple-400 uppercase tracking-wider">Akurasi Perhitungan</div>
+                        <div class="text-3xl font-extrabold text-purple-400 mt-2 font-mono">99.4%</div>
+                        <div class="text-xs text-slate-500 mt-1">Zero Double-Counting</div>
+                        <div class="absolute right-4 bottom-4 text-purple-500/10 text-5xl font-black">★</div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg flex flex-col">
+                        <h3 class="text-sm font-bold text-slate-200 mb-4">Arus Lalu Lintas per Jam Hari Ini (Hourly Traffic Flow)</h3>
+                        <div class="flex-1 min-h-[280px]">
+                            <canvas id="hourlyFlowCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg flex flex-col">
+                        <h3 class="text-sm font-bold text-slate-200 mb-4">Komposisi Objek Terdeteksi</h3>
+                        <div class="flex-1 min-h-[280px] flex items-center justify-center">
+                            <canvas id="compositionCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Events Activity Feed -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-200 mb-3">10 Perlintasan Terakhir dengan Bukti Snapshot</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                <tr>
+                                    <th class="py-2.5 px-3">Waktu</th>
+                                    <th class="py-2.5 px-3">Jenis Objek</th>
+                                    <th class="py-2.5 px-3">Arah</th>
+                                    <th class="py-2.5 px-3">Snapshot Foto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentEventsTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. ANPR & LICENSE PLATE HUB TAB -->
+            <div id="anprTab" class="tab-content-panel hidden space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">ANPR Hub & Pengenalan Plat Nomor</h2>
+                        <p class="text-xs text-slate-400">Ekstraksi plat nomor otomatis (OCR $\ge 95\%$) dan pengawasan daftar Blacklist / Whitelist</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="/api/export/excel" download class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5">
+                            📊 Unduh Excel (.xlsx)
+                        </a>
+                        <a href="/api/export/pdf" download class="px-3 py-2 bg-rose-700 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5">
+                            📄 Unduh PDF
+                        </a>
+                        <button onclick="openModal('addVehicleModal')" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow transition">
+                            + Daftarkan Kendaraan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters Bar -->
+                <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-700/60 flex flex-wrap items-center gap-4">
+                    <div class="flex-1 min-w-[200px]">
+                        <input type="text" id="anprSearchInput" oninput="onSearchPlateInput(this.value)" placeholder="Cari nomor plat (contoh: B 1234 CD)..." class="w-full bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl text-sm focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Status Akses:</span>
+                        <select onchange="onFilterCategoryChange(this.value)" class="bg-slate-800 text-white text-sm px-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-sky-500">
+                            <option value="">Semua Kategori</option>
+                            <option value="BLACKLIST">BLACKLIST</option>
+                            <option value="WHITELIST">WHITELIST</option>
+                            <option value="VIP">VIP</option>
+                            <option value="UNREGISTERED">UNREGISTERED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Two-Column Layout: Logs and Registry -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Logs Table (2 cols) -->
+                    <div class="lg:col-span-2 bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                        <h3 class="text-sm font-bold text-slate-200 mb-3">Log Deteksi Plat Nomor Terbaru</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Waktu</th>
+                                        <th class="py-2.5 px-3">Crop Plat</th>
+                                        <th class="py-2.5 px-3">Plat Nomor (OCR)</th>
+                                        <th class="py-2.5 px-3">Status</th>
+                                        <th class="py-2.5 px-3">Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="anprLogsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Vehicle Registry (1 col) -->
+                    <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                        <h3 class="text-sm font-bold text-slate-200 mb-3">Daftar Kendaraan Terdaftar</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Plat</th>
+                                        <th class="py-2.5 px-3">Kategori</th>
+                                        <th class="py-2.5 px-3">Pemilik</th>
+                                        <th class="py-2.5 px-3 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="registryTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. ALERTS & SECURITY TAB -->
+            <div id="alertsTab" class="tab-content-panel hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-white tracking-wide">Pusat Peringatan & Alert Keamanan</h2>
+                    <p class="text-xs text-slate-400">Riwayat deteksi kendaraan buron (Blacklist) dan notifikasi multi-saluran</p>
+                </div>
+
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-200 mb-3">Audit Trail Peringatan Darurat</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                <tr>
+                                    <th class="py-2.5 px-3">Waktu</th>
+                                    <th class="py-2.5 px-3">Jenis Aturan</th>
+                                    <th class="py-2.5 px-3">Pesan Detail</th>
+                                    <th class="py-2.5 px-3">Foto Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alertsHistoryTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. SETTINGS & CAMERAS TAB -->
+            <div id="settingsTab" class="tab-content-panel hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-white tracking-wide">Manajemen Kamera & Server Edge</h2>
+                        <p class="text-xs text-slate-400">Konfigurasi saluran video RTSP/HLS, akselerasi AI, dan kesehatan infrastruktur</p>
+                    </div>
+                    <button onclick="openModal('addCameraModal')" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-semibold shadow transition">
+                        + Tambah Kamera Baru
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                    <h3 class="text-sm font-bold text-slate-200 mb-3">Daftar Kamera Terdaftar</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                <tr>
+                                    <th class="py-3 px-4">Nama Kamera</th>
+                                    <th class="py-3 px-4">Tipe</th>
+                                    <th class="py-3 px-4">Stream Ingestion</th>
+                                    <th class="py-3 px-4">AI Inferensi</th>
+                                    <th class="py-3 px-4">Model & FPS</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="settingsCamerasTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Konfigurasi Server Edge & Integrasi -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200">Konfigurasi Server Edge & Integrasi</h3>
+                            <p class="text-xs text-slate-400">Atur parameter inferensi AI, ambang batas deteksi, dan integrasi alert bot Telegram</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="restartStreamsService()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                                🔄 Muat Ulang Pipeline AI
+                            </button>
+                        </div>
+                    </div>
+
+                    <form id="serverSettingsForm" onsubmit="handleSaveServerSettings(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Sistem / Server Node</label>
+                                <input type="text" id="srvProjectNameInput" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Default Video Frame Rate (FPS)</label>
+                                <select id="srvDefaultFpsSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                                    <option value="0">⚡ Maksimal / Kecepatan Asli Sumber Kamera (Unthrottled)</option>
+                                    <option value="30">30 FPS (Full Motion High-Speed)</option>
+                                    <option value="25">25 FPS (Standar PAL/CCTV Normal)</option>
+                                    <option value="20">20 FPS (Seimbang)</option>
+                                    <option value="15">15 FPS (Hemat Bandwidth)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Ambang Deteksi YOLO (Confidence)</label>
+                                <input type="number" id="srvDetectionConfInput" min="0.1" max="0.95" step="0.05" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                                <span class="text-[10px] text-slate-500">Default: 0.35 (Makin rendah makin sensitif)</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Ambang EasyOCR Plat (Confidence)</label>
+                                <input type="number" id="srvAnprConfInput" min="0.1" max="0.95" step="0.05" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                                <span class="text-[10px] text-slate-500">Default: 0.30</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Retensi Data & Snapshot (Hari)</label>
+                                <input type="number" id="srvRetentionDaysInput" min="1" max="365" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                                <span class="text-[10px] text-slate-500">Pembersihan file bukti otomatis</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-800/40 border border-slate-700/60 rounded-xl space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                                    ✈️ Notifikasi Telegram Bot (Alert Blacklist Real-Time)
+                                </span>
+                                <button type="button" onclick="testTelegramAlert()" class="px-3 py-1 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 rounded-lg text-xs font-semibold transition">
+                                    ⚡ Uji Kirim Pesan Telegram
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Telegram Bot Token</label>
+                                    <input type="text" id="srvTgTokenInput" placeholder="Contoh: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" class="w-full font-mono text-xs bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Telegram Chat ID / Group ID</label>
+                                    <input type="text" id="srvTgChatIdInput" placeholder="Contoh: -100123456789 atau ID Pribadi" class="w-full font-mono text-xs bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Google Gemini Multimodal AI Vision -->
+                        <div class="p-4 bg-gradient-to-br from-sky-950/40 via-slate-900 to-indigo-950/40 border border-sky-500/40 rounded-2xl space-y-3.5 shadow-lg">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-400 font-bold text-sm shadow-sm">
+                                        ✨
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                                            Google Gemini AI Vision
+                                            <span class="text-[10px] text-sky-400 font-semibold px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30">Gemini 3.6 & 3.8 Flash</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-400 mt-0.5">
+                                            Mendukung model terbaru <strong class="text-slate-200">Google Gemini 3.6 Flash</strong>, <strong class="text-slate-200">3.8 Flash</strong>, dan <strong class="text-slate-200">3.5 Flash Lite</strong> untuk deteksi struk kasir paling akurat dan secepat kilat.
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="testGeminiConnection()" class="px-3.5 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 text-sky-200 border border-sky-500/50 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow">
+                                    ⚡ Uji Koneksi Gemini AI
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                                <div class="md:col-span-2">
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="block text-[11px] font-extrabold uppercase tracking-widest text-slate-300">GEMINI API KEY</label>
+                                        <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener noreferrer" class="text-[11px] text-sky-400 hover:text-sky-300 underline flex items-center gap-1 font-semibold">
+                                            🔑 Buat API Key di Google AI Studio ↗
+                                        </a>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="password" id="srvGeminiApiKeyInput" placeholder="Masukkan Google Gemini API Key (AIzaSy...)" class="w-full font-mono text-xs bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-sky-500 pr-10 shadow-inner">
+                                        <button type="button" onclick="toggleGeminiKeyVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs" title="Tampilkan / Sembunyikan API Key">
+                                            👁️
+                                        </button>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 mt-1 block">Digunakan untuk ekstraksi struk kasir, pembacaan plat/nomor dokumen, dan analisis forensik visual CCTV.</span>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-extrabold uppercase tracking-widest text-slate-300 mb-1.5">MODEL GEMINI VISION</label>
+                                    <select id="srvGeminiModelSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-sky-500 font-medium">
+                                        <option value="gemini-3.6-flash" selected>Google Gemini 3.6 Flash (Sangat Akurat & Secepat Kilat - Rekomendasi)</option>
+                                        <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High-Throughput Vision AI)</option>
+                                        <option value="gemini-3.5-flash-lite">Google Gemini 3.5 Flash Lite (Paling Cepat & Ringan)</option>
+                                        <option value="gemini-3.0-pro">Google Gemini 3.0 Pro (Penalaran Kompleks Maksimal)</option>
+                                    </select>
+                                    <span class="text-[10px] text-slate-500 mt-1 block">Inferensi multimodal ultra-cepat</span>
+                                </div>
+                            </div>
+                            <div id="geminiConnectionStatus" class="hidden text-xs px-3.5 py-2.5 rounded-xl font-medium transition"></div>
+                        </div>
+
+
+                        <div class="flex items-center justify-between pt-2">
+                            <span id="serverSettingsStatus" class="text-xs text-emerald-400 font-semibold"></span>
+                            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                                💾 Simpan Pengaturan Server
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+
+                <!-- Penyimpanan Rekaman & Sinkronisasi Cloud / NAS -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                ☁️ Penyimpanan & Sinkronisasi Cadangan Cloud / NAS
+                            </h3>
+                            <p class="text-xs text-slate-400">Sinkronisasi otomatis rekaman klip kejadian dan snapshot ke direktori cadangan NAS lokal atau Cloud Object Storage</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="syncStorageNow()" id="syncStorageBtn" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-2">
+                                ⚡ Sinkronkan Sekarang
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="p-3.5 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Ruang Hard Disk Lokal</div>
+                            <div id="storageDiskUsage" class="text-lg font-bold text-white mt-1 font-mono">0 GB / 0 GB</div>
+                            <div class="w-full bg-slate-700/60 rounded-full h-1.5 mt-2">
+                                <div id="storageDiskProgress" class="bg-sky-500 h-1.5 rounded-full" style="width: 15%"></div>
+                            </div>
+                        </div>
+                        <div class="p-3.5 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Total Klip Tersimpan</div>
+                            <div id="storageClipsCount" class="text-lg font-bold text-emerald-400 mt-1 font-mono">0 Klip</div>
+                            <div id="storageClipsSize" class="text-xs text-slate-500 mt-1">Ukuran: 0 MB</div>
+                        </div>
+                        <div class="p-3.5 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Ruang Lokal Dihemat (GCS)</div>
+                            <div id="storageGcsFreed" class="text-lg font-bold text-purple-400 mt-1 font-mono">0.00 MB</div>
+                            <div class="text-[10px] text-emerald-400 mt-1">● Berkas Lokal Dihapus Otomatis</div>
+                        </div>
+                        <div class="p-3.5 bg-slate-800/40 rounded-xl border border-slate-700/50">
+                            <div class="text-[11px] font-semibold text-slate-400 uppercase">Target Cloud Storage</div>
+                            <div id="storageGcsTarget" class="text-xs font-mono text-sky-300 mt-1 truncate" title="gs://">-</div>
+                            <div id="storageSyncStatus" class="text-[10px] text-slate-400 mt-1">Status: Siap Sinkron</div>
+                        </div>
+                    </div>
+
+                    <!-- Form Konfigurasi Google Cloud Storage Bucket -->
+                    <div class="p-4 bg-slate-950/60 rounded-xl border border-sky-500/30 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">🪣</span>
+                                <div>
+                                    <h4 class="text-xs font-bold text-sky-300 uppercase tracking-wider">Konfigurasi Google Cloud Console Storage Bucket</h4>
+                                    <p class="text-[11px] text-slate-400">Penyimpanan video langsung ke Bucket Cloud Google (Bukan lokal) sesuai instruksi</p>
+                                </div>
+                            </div>
+                            <span id="gcsStatusBadge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">Menunggu Konfigurasi</span>
+                        </div>
+
+                        <form id="gcsConfigForm" onsubmit="saveGcsConfig(event)" class="space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nama GCS Bucket (Bucket Name)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-2.5 text-xs text-slate-500 font-mono">gs://</span>
+                                        <input type="text" id="gcsBucketNameInput" required placeholder="cctv-smart-vision-storage-bucket" class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-11 pr-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono">
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-1">Dibuat melalui menu Cloud Storage di Google Cloud Console</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Google Cloud Project ID</label>
+                                    <input type="text" id="gcsProjectIdInput" placeholder="smart-cctv-surveillance-2026" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono">
+                                    <p class="text-[10px] text-slate-500 mt-1">Project ID dari dashboard GCP Anda</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Service Account Key (Kunci Otentikasi JSON atau Path Berkas)</label>
+                                <textarea id="gcsCredentialsInput" rows="2" placeholder='Tempelkan isi JSON kunci Service Account ({"type": "service_account", ...}) atau path berkas /path/to/key.json' class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-mono"></textarea>
+                                <p class="text-[10px] text-slate-500 mt-0.5">Dapatkan dari: GCP Console ➔ IAM & Admin ➔ Service Accounts ➔ Create Key (JSON) dengan izin <i>Storage Object Admin</i></p>
+                            </div>
+
+                            <div class="flex items-center gap-3 p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+                                <input type="checkbox" id="gcsAutoDeleteInput" checked class="w-4 h-4 rounded text-sky-600 bg-slate-800 border-slate-700 focus:ring-sky-500">
+                                <label for="gcsAutoDeleteInput" class="text-xs text-slate-300 cursor-pointer">
+                                    <strong>Simpan hanya di Google Cloud Storage Bucket</strong> (Hapus berkas video lokal otomatis setelah berhasil diunggah ke GCS untuk menghemat 100% hard disk server)
+                                </label>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2 pt-1">
+                                <button type="submit" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                    💾 Simpan Konfigurasi GCS
+                                </button>
+                                <button type="button" onclick="testGcsConnection()" id="testGcsBtn" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 border border-sky-500/30 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                                    ⚡ Uji Koneksi GCS Bucket
+                                </button>
+                                <button type="button" onclick="syncToGcsNow()" id="syncGcsBtn" class="px-3.5 py-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                                    ☁️ Unggah Semua Rekaman ke GCS Sekarang
+                                </button>
+                            </div>
+
+                            <div id="gcsFeedbackBox" class="hidden p-3 rounded-lg text-xs"></div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Audit Trail & Log Aktivitas Pengguna (Security Log) -->
+                <div class="bg-slate-900/90 rounded-2xl border border-slate-700/60 p-5 shadow-lg space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                🛡️ Audit Trail & Log Aktivitas Pengguna
+                            </h3>
+                            <p class="text-xs text-slate-400">Pencatatan riwayat keamanan siapa yang mengubah garis virtual, mengganti konfigurasi server, atau mematikan stream</p>
+                        </div>
+                        <button type="button" onclick="loadAuditLogs()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                            🔄 Segarkan Log
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-700/60">
+                                <tr>
+                                    <th class="py-2.5 px-3">Waktu</th>
+                                    <th class="py-2.5 px-3">Pengguna & Role</th>
+                                    <th class="py-2.5 px-3">Tindakan</th>
+                                    <th class="py-2.5 px-3">Entitas</th>
+                                    <th class="py-2.5 px-3">Detail Keterangan</th>
+                                    <th class="py-2.5 px-3">IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogsTableBody">
+                                <tr><td colspan="6" class="text-center py-6 text-slate-500 text-xs">Memuat log aktivitas pengguna...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL: ADD CAMERA -->
+    <div id="addCameraModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-1">Daftarkan Kamera Baru</h3>
+            <p class="text-xs text-slate-400 mb-4">Mendukung Kamera IP Lokal (RTSP), Web Stream (HLS .m3u8), atau Simulasi Demo</p>
+            
+            <form id="addCameraForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kamera</label>
+                    <input type="text" id="camNameInput" required placeholder="Contoh: Simpang Sudirman" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Jenis Sumber</label>
+                        <select id="camTypeSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                            <option value="HLS">HLS Web Stream (.m3u8)</option>
+                            <option value="RTSP">RTSP (IP Camera / NVR)</option>
+                            <option value="SYNTHETIC">Simulasi AI Demo Feed</option>
+                            <option value="0">Webcam Lokal (0)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Model AI</label>
+                        <select id="camModelSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                            <option value="yolo11n">YOLOv11 Nano (Cepat / Efisien)</option>
+                            <option value="yolo11m">YOLOv11 Medium (Presisi Tinggi)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">URL Sumber Stream</label>
+                    <input type="text" id="camUrlInput" required placeholder="https://.../video.m3u8 atau rtsp://..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Target Objek Dideteksi (AI)</label>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="car" checked class="rounded accent-sky-500">
+                            <span>🚗 Mobil</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="motorcycle" checked class="rounded accent-sky-500">
+                            <span>🛵 Motor</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="person" checked class="rounded accent-sky-500">
+                            <span>🚶 Orang</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="bus" checked class="rounded accent-sky-500">
+                            <span>🚌 Bus</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="truck" checked class="rounded accent-sky-500">
+                            <span>🚛 Truk</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="addCamClass" value="bicycle" checked class="rounded accent-sky-500">
+                            <span>🚲 Sepeda</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Target Frame Rate (FPS)</label>
+                    <select id="camFpsSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                        <option value="0">⚡ Maksimal / Kecepatan Asli Sumber Kamera (Unthrottled)</option>
+                        <option value="30">30 FPS (Halus / Full Motion)</option>
+                        <option value="25" selected>25 FPS (Standar PAL/CCTV Normal)</option>
+                        <option value="20">20 FPS (Seimbang)</option>
+                        <option value="15">15 FPS (Hemat Bandwidth)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('addCameraModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow">Simpan & Aktifkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT CAMERA -->
+    <div id="editCameraModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-1">Edit Pengaturan Kamera</h3>
+            <p class="text-xs text-slate-400 mb-4">Ubah nama, URL stream, target kelas deteksi AI, atau target frame rate (FPS)</p>
+            
+            <form id="editCameraForm" class="space-y-4">
+                <input type="hidden" id="editCamIdInput">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Kamera</label>
+                    <input type="text" id="editCamNameInput" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Jenis Sumber</label>
+                        <select id="editCamTypeSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                            <option value="HLS">HLS Web Stream (.m3u8)</option>
+                            <option value="RTSP">RTSP (IP Camera / NVR)</option>
+                            <option value="SYNTHETIC">Simulasi AI Demo Feed</option>
+                            <option value="0">Webcam Lokal (0)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Model AI</label>
+                        <select id="editCamModelSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                            <option value="yolo11n">YOLOv11 Nano (Cepat / Efisien)</option>
+                            <option value="yolo11m">YOLOv11 Medium (Presisi Tinggi)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">URL Sumber Stream</label>
+                    <input type="text" id="editCamUrlInput" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">Target Objek Dideteksi (AI)</label>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="car" class="rounded accent-sky-500">
+                            <span>🚗 Mobil</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="motorcycle" class="rounded accent-sky-500">
+                            <span>🛵 Motor</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="person" class="rounded accent-sky-500">
+                            <span>🚶 Orang</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="bus" class="rounded accent-sky-500">
+                            <span>🚌 Bus</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="truck" class="rounded accent-sky-500">
+                            <span>🚛 Truk</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/80 border border-slate-700 cursor-pointer hover:border-sky-500">
+                            <input type="checkbox" name="editCamClass" value="bicycle" class="rounded accent-sky-500">
+                            <span>🚲 Sepeda</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Target Frame Rate (FPS)</label>
+                    <select id="editCamFpsSelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                        <option value="0">⚡ Maksimal / Kecepatan Asli Sumber Kamera (Unthrottled)</option>
+                        <option value="30">30 FPS (Halus / Full Motion)</option>
+                        <option value="25">25 FPS (Standar PAL/CCTV Normal)</option>
+                        <option value="20">20 FPS (Seimbang)</option>
+                        <option value="15">15 FPS (Hemat Bandwidth)</option>
+                    </select>
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('editCameraModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD VEHICLE REGISTRY -->
+    <div id="addVehicleModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-1">Daftarkan Plat Nomor Kendaraan</h3>
+            <p class="text-xs text-slate-400 mb-4">Tambahkan plat nomor ke dalam kategori Whitelist, Blacklist, atau VIP</p>
+
+            <form id="addVehicleForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nomor Plat (Indonesia)</label>
+                    <input type="text" id="regPlateInput" required placeholder="Contoh: B 1234 CD" class="w-full uppercase font-mono font-bold bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-400 focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Kategori Daftar</label>
+                    <select id="regCategorySelect" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                        <option value="BLACKLIST">BLACKLIST (Picu Alarm & Notifikasi Darurat)</option>
+                        <option value="WHITELIST">WHITELIST (Akses Diizinkan)</option>
+                        <option value="VIP">VIP (Tamu Penting / Prioritas)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Pemilik / Pengemudi</label>
+                    <input type="text" id="regOwnerInput" placeholder="Contoh: Budi Santoso" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Catatan Tambahan</label>
+                    <input type="text" id="regNotesInput" placeholder="Alasan penambahan blacklist/whitelist..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('addVehicleModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow">Simpan Plat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: IMAGE VIEWER -->
+    <div id="imageViewerModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6" onclick="closeModal('imageViewerModal')">
+        <div class="relative max-w-4xl max-h-[90vh] p-4 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col items-center" onclick="event.stopPropagation()">
+            <img id="imageViewerModalImg" src="" class="max-h-[65vh] w-auto rounded-xl object-contain mx-auto shadow-lg" alt="Full Preview">
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <button onclick="analyzeViewerSnapshotWithGemini()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-600/30 transition flex items-center gap-2">
+                    ✨ Analisis Forensik dengan Gemini AI Vision
+                </button>
+                <button onclick="closeModal('imageViewerModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition">
+                    Tutup Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GEMINI AI VISION FORENSICS STUDIO -->
+    <div id="geminiVisionModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6" onclick="closeModal('geminiVisionModal')">
+        <div class="relative bg-slate-900 border border-purple-500/40 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="px-5 py-3.5 bg-gradient-to-r from-sky-950/80 via-slate-900 to-indigo-950/80 border-b border-sky-500/30 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-lg">✨</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            Google Gemini AI Vision Studio
+                            <span id="geminiModalModelBadge" class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-mono border border-sky-500/30">Gemini 3.6 & 3.8 Flash</span>
+                        </h3>
+                        <p class="text-xs text-slate-400" id="geminiModalSubtitle">Analisis Forensik CCTV, Ekstraksi Struk Kasir & Deteksi Cerdas Secepat Kilat</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('geminiVisionModal')" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+            </div>
+
+            <!-- Body (Scrollable) -->
+            <div class="p-5 overflow-y-auto space-y-4 flex-1">
+                <!-- Preview & Quick Meta Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-5 bg-black/60 rounded-xl border border-slate-800 p-2 flex flex-col items-center justify-center min-h-[200px]">
+                        <img id="geminiModalImg" src="" class="max-h-56 w-auto object-contain rounded-lg shadow" alt="Target Analysis">
+                        <div class="mt-2 text-[11px] text-slate-400 font-mono text-center truncate max-w-full" id="geminiModalSourceText">Sumber: Snapshot</div>
+                    </div>
+                    
+                    <div class="md:col-span-7 flex flex-col justify-between space-y-3">
+                        <div class="p-3 bg-slate-800/40 border border-slate-700/60 rounded-xl space-y-2">
+                            <label class="block text-xs font-semibold text-sky-300 flex items-center gap-1.5">
+                                💬 Pertanyaan Khusus untuk AI Vision (Opsional)
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="text" id="geminiCustomPromptInput" placeholder="Contoh: Ekstraksi seluruh item struk belanja, atau deskripsikan mobil & pakaian." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+                                <button type="button" onclick="runGeminiModalAnalysis(true)" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow transition whitespace-nowrap">
+                                    Tanya AI ➔
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 pt-1 text-[11px]">
+                                <span class="text-slate-500">Preset cepat:</span>
+                                <button type="button" onclick="quickReceiptPrompt()" class="px-2.5 py-0.5 rounded-lg bg-sky-500/20 text-sky-300 hover:text-white border border-sky-500/40 hover:bg-sky-500/40 transition font-bold">🧾 Deteksi Struk Kasir</button>
+                                <button type="button" onclick="quickPrompt('Berapa orang yang terlihat dan apa aktivitas mereka?')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition">👤 Orang & Aktivitas</button>
+                                <button type="button" onclick="quickPrompt('Deskripsikan jenis, warna, model dan plat nomor kendaraan secara mendalam.')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition">🚗 Detail Kendaraan</button>
+                                <button type="button" onclick="quickPrompt('Apakah ada indikasi pelanggaran aturan keamanan atau potensi ancaman?')" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-sky-500 transition">⚠️ Bahaya & Anomali</button>
+                            </div>
+                        </div>
+
+                        <!-- Action controls -->
+                        <div class="flex items-center justify-between pt-1">
+                            <button type="button" onclick="runGeminiModalAnalysis(false)" id="btnReanalyzeGemini" class="px-4 py-2 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-600/20 transition flex items-center gap-2">
+                                ⚡ Jalankan Analisis AI Lengkap
+                            </button>
+                            <button type="button" onclick="copyGeminiReport()" id="btnCopyGemini" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition flex items-center gap-1.5">
+                                📋 Salin Laporan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Result Card -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 min-h-[220px] relative">
+                    <!-- Loading Spinner Overlay -->
+                    <div id="geminiModalLoading" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
+                        <div class="w-9 h-9 border-3 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs font-semibold text-sky-300 animate-pulse">Menghubungkan ke Google Gemini Vision (3.6/3.8 Flash) & Memproses...</span>
+                        <span class="text-[10px] text-slate-400">Deteksi akurat struk kasir, identifikasi kendaraan, manusia, dan forensik visual</span>
+                    </div>
+
+                    <!-- Output Content -->
+                    <div id="geminiModalOutput" class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                        <div class="py-8 text-center text-slate-500">
+                            <span class="text-2xl block mb-2">🔍</span>
+                            Pilih tombol <strong>"🧾 Deteksi Struk Kasir"</strong> atau <strong>"⚡ Jalankan Analisis AI Lengkap"</strong> untuk memulai.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                <span id="geminiModalTimestamp">Status: Siap</span>
+                <button type="button" onclick="closeModal('geminiVisionModal')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GOOGLE GEMINI AI VISION QUICK POPUP (PERSIS REFERENSI) -->
+    <div id="geminiApiKeyModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-slate-800 transition-all border border-slate-100" onclick="event.stopPropagation()">
+            <!-- Close Button -->
+            <button type="button" onclick="closeModal('geminiApiKeyModal')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 text-xl font-bold w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 transition">
+                ✕
+            </button>
+
+            <!-- Header with Sparkle Icon -->
+            <div class="flex items-center gap-3.5 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-500 text-2xl shadow-sm">
+                    ✨
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 tracking-tight leading-tight">
+                        Google Gemini AI Vision
+                    </h3>
+                    <div class="text-xs font-semibold text-sky-600 mt-0.5">
+                        Gemini 3.6 & 3.8 Flash
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <p class="text-xs text-slate-600 leading-relaxed mb-5">
+                Mendukung model terbaru <strong class="text-slate-900 font-bold">Google Gemini 3.6 Flash</strong>, <strong class="text-slate-900 font-bold">3.8 Flash</strong>, dan <strong class="text-slate-900 font-bold">3.5 Flash Lite</strong> untuk deteksi struk kasir paling akurat dan secepat kilat.
+            </p>
+
+            <!-- Form -->
+            <form onsubmit="handleQuickGeminiSave(event)" class="space-y-4">
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-[11px] font-black uppercase tracking-wider text-slate-700">
+                            GEMINI API KEY
+                        </label>
+                        <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener noreferrer" class="text-[11px] text-sky-600 hover:text-sky-700 font-semibold underline">
+                            Ambil Key di AI Studio ↗
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="quickGeminiApiKeyInput" placeholder="Masukkan Google Gemini API Key" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500 pr-10 shadow-inner">
+                        <button type="button" onclick="toggleQuickGeminiKeyVisibility()" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700 text-sm" title="Lihat Key">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                        PILIHAN MODEL
+                    </label>
+                    <select id="quickGeminiModelSelect" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500">
+                        <option value="gemini-3.6-flash" selected>Google Gemini 3.6 Flash (Sangat Akurat & Secepat Kilat)</option>
+                        <option value="gemini-3.8-flash">Google Gemini 3.8 Flash (High-Throughput Vision AI)</option>
+                        <option value="gemini-3.5-flash-lite">Google Gemini 3.5 Flash Lite (Paling Cepat & Ringan)</option>
+                        <option value="gemini-3.0-pro">Google Gemini 3.0 Pro (Penalaran Kompleks Maksimal)</option>
+                    </select>
+                </div>
+
+                <div id="quickGeminiStatusMsg" class="hidden text-xs p-2.5 rounded-xl font-medium"></div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="testQuickGeminiConnection()" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+                        ⚡ Uji Koneksi
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-sky-600/30 transition">
+                        Simpan Pengaturan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <!-- MODAL: USER PROFILE & RBAC ROLE SWITCHER -->
+    <div id="userProfileModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-white">Profil Pengguna & Hak Akses (RBAC)</h3>
+                    <p class="text-xs text-slate-400">Pengaturan peran pengguna dan simulasi keamanan sistem</p>
+                </div>
+                <button type="button" onclick="closeModal('userProfileModal')" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <!-- Current Active User Info -->
+            <div class="p-4 bg-slate-800/60 rounded-xl border border-slate-700/60 flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-2xl" id="modalUserAvatar">
+                    👑
+                </div>
+                <div>
+                    <div class="font-bold text-sm text-white" id="modalUsernameDisplay">Super Administrator</div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span id="modalRoleBadge" class="px-2 py-0.5 rounded text-xs font-semibold bg-sky-600/30 text-sky-400 border border-sky-500/40">ADMIN</span>
+                        <span class="text-[11px] text-slate-400">Sesi Aktif</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fast Role Switcher (Simulator RBAC) -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-300">Simulasi / Ganti Peran Akses Cepat:</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="switchUserRole('ADMIN')" class="p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 bg-slate-800/80 hover:bg-slate-700 border-slate-700 role-switch-btn" data-role="ADMIN">
+                        <span class="text-base">👑</span>
+                        <span class="text-xs font-bold text-white">ADMIN</span>
+                        <span class="text-[10px] text-slate-400">Akses Penuh</span>
+                    </button>
+                    <button type="button" onclick="switchUserRole('OPERATOR')" class="p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 bg-slate-800/80 hover:bg-slate-700 border-slate-700 role-switch-btn" data-role="OPERATOR">
+                        <span class="text-base">🛡️</span>
+                        <span class="text-xs font-bold text-white">OPERATOR</span>
+                        <span class="text-[10px] text-slate-400">Satpam / Monitor</span>
+                    </button>
+                    <button type="button" onclick="switchUserRole('AUDITOR')" class="p-2.5 rounded-xl border text-center transition flex flex-col items-center gap-1 bg-slate-800/80 hover:bg-slate-700 border-slate-700 role-switch-btn" data-role="AUDITOR">
+                        <span class="text-base">📊</span>
+                        <span class="text-xs font-bold text-white">AUDITOR</span>
+                        <span class="text-[10px] text-slate-400">Analitik & PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Role Permissions Matrix Description -->
+            <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1.5" id="roleDescBox">
+                <div class="font-semibold text-slate-200">Hak Akses Peran Terpilih:</div>
+                <div id="rolePermsList" class="text-[11px] leading-relaxed">
+                    • Menambah, mengedit, dan menghapus kamera<br>
+                    • Konfigurasi garis virtual & ambang batas deteksi AI<br>
+                    • Kontrol penuh siklus stream & inferensi AI<br>
+                    • Pencadangan Cloud/NAS & manajemen pengguna
+                </div>
+            </div>
+
+            <!-- Login / Switch Account Form -->
+            <form id="authLoginForm" onsubmit="handleAuthLogin(event)" class="space-y-3 pt-2 border-t border-slate-800">
+                <div class="text-xs font-semibold text-slate-300">Atau Masuk dengan Kredensial Pengguna:</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="loginUsernameInput" placeholder="Username (misal: satpam)" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500">
+                    <input type="password" id="loginPasswordInput" placeholder="Password" class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="flex items-center justify-between">
+                    <span id="loginStatusMsg" class="text-[11px] text-slate-400"></span>
+                    <button type="submit" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold shadow transition">
+                        Masuk Sistem
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts with Cache-Busting -->
+    <script src="/js/alert_sound.js?v=2.4"></script>
+    <script src="/js/canvas_editor.js?v=2.4"></script>
+    <script src="/js/analytics_charts.js?v=2.4"></script>
+    <script src="/js/anpr_manager.js?v=2.4"></script>
+    <script src="/js/app.js?v=2.4"></script>
+</body>
+</html>
+
+

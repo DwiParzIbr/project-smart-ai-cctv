@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  cctv-surveillance:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_ai_cctv_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./models:/app/models
+    environment:
+      - DATABASE_URL=sqlite:////app/storage/smart_cctv.db
+      - DEFAULT_STREAM_FPS=15
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
